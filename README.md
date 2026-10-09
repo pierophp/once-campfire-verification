@@ -1,6 +1,6 @@
 # once-campfire-verification
 
-Shared verification and benchmarks for [Campfire](https://github.com/basecamp/once-campfire) and its Django, Laravel, Express, Elixir, Go, Rust, C and C++ implementations.
+Shared verification and benchmarks for [Campfire](https://github.com/basecamp/once-campfire) and its Django, Laravel, Express, Elixir, Go, Rust, Swift, C and C++ implementations.
 
 Every measured HTTP response must match its route contract: status, headers, complete decoded body, expected messages and content. Every acknowledged message write must match its exact persisted ID, body, room and search-index entry. Any invalid response or failed write audit fails the run. Browser flows check installation, live messages, editing, search, permissions, settings, invitations and session transfer.
 
@@ -19,7 +19,7 @@ cargo build --release --locked --manifest-path loadgen/Cargo.toml
 bin/benchmark --apps rails,elixir,go,rust
 ```
 
-Build the implementations' production images first. Override their image names with `RAILS_IMAGE`, `DJANGO_IMAGE`, `LARAVEL_IMAGE`, `EXPRESS_IMAGE`, `ELIXIR_IMAGE`, `GO_IMAGE`, `RUST_IMAGE`, `C_IMAGE` and `CPP_IMAGE`. The C++ implementation is not in the default `--apps` list; select it with `--apps rust,cpp`. `--help` lists the benchmark options, including CPU affinity, seed path, route selection and output directory. The default is three alternating rounds with 16 concurrent clients. A process lock prevents overlapping benchmark runs. The fixture builder pins public Rails revision `90b3300` and generates real attachments and variants; it generates disposable signing, push and login credentials locally and refuses to overwrite an existing seed.
+Build the implementations' production images first. Override their image names with `RAILS_IMAGE`, `DJANGO_IMAGE`, `LARAVEL_IMAGE`, `EXPRESS_IMAGE`, `ELIXIR_IMAGE`, `GO_IMAGE`, `RUST_IMAGE`, `SWIFT_IMAGE`, `C_IMAGE` and `CPP_IMAGE`. The C++ and Swift implementations are not in the default `--apps` list; select them with `--apps rust,cpp` or `--apps rust,swift`. The Swift port does not serve the stylesheet assets or the Rails `/up` page yet, so measure it on the headline routes: `--apps rust,swift --routes room_show,messages_page,sidebar,search,post_message`. Only the selected routes are preflighted and given contracts. `--help` lists the benchmark options, including CPU affinity, seed path, route selection and output directory. The default is three alternating rounds with 16 concurrent clients. A process lock prevents overlapping benchmark runs. The fixture builder pins public Rails revision `90b3300` and generates real attachments and variants; it generates disposable signing, push and login credentials locally and refuses to overwrite an existing seed.
 
 An optional cache-churn profile runs the same validated reads alongside one paced writer:
 

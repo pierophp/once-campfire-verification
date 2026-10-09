@@ -20,7 +20,9 @@ module BenchmarkContracts
     raise "invalid avatar image: #{errors}" unless valid
   end
 
-  def self.prepare(base, cookie, database, labels, css, destination)
+  # Only the selected routes get a preflight and a contract, so an implementation can be measured
+  # on the routes it serves.
+  def self.prepare(base, cookie, database, labels, css, destination, selected = nil)
     room = Integer(labels.fetch("rooms.watercooler"))
     write_room = Integer(labels.fetch("rooms.hq"))
     uri = URI(base)
@@ -43,7 +45,7 @@ module BenchmarkContracts
     FileUtils.mkdir_p(contract_dir)
     Net::HTTP.new(uri.host, uri.port, nil).start do |http|
       routes.each do |name, path|
-        next unless path
+        next unless path && (selected.nil? || selected.include?(name))
         response = http.get(path, "Cookie" => cookie, "Accept-Encoding" => "gzip")
         raise "#{name}: HTTP #{response.code}" unless response.code == "200"
         body = response.body

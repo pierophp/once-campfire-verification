@@ -29,7 +29,7 @@ OptionParser.new do |parser|
 end.parse!
 raise "use at least two rounds" unless options[:rounds] >= 2
 apps = options[:apps].split(",")
-allowed = %w[rails django laravel express express-bun elixir go rust c cpp]
+allowed = %w[rails django laravel express express-bun elixir go rust swift c cpp]
 raise "apps must be nonempty, unique and supported" unless !apps.empty? && apps.uniq == apps && apps.all? { |app| allowed.include?(app) }
 selected_routes = options[:routes].split(",")
 raise "unknown or empty route selection" unless !selected_routes.empty? && (selected_routes - %w[room_show messages_page sidebar search avatar static_css up post_message]).empty?
@@ -89,7 +89,7 @@ begin
     order = iteration.even? ? apps : apps.reverse
     order.each do |app|
       kind = runtimes.fetch(app)
-      images = { "rails" => "once-campfire:app", "rust" => "campfire-rust:app", "elixir" => "campfire-elixir:app", "express-bun" => "once-campfire-express:bun" }
+      images = { "rails" => "once-campfire:app", "rust" => "campfire-rust:app", "swift" => "campfire-swift:app", "elixir" => "campfire-elixir:app", "express-bun" => "once-campfire-express:bun" }
       image = ENV.fetch("#{env_name.(app)}_IMAGE", images.fetch(app, "once-campfire-#{app}:app"))
       source = File.join(options[:workspace], kind == "rails" ? "once-campfire" : "once-campfire-#{kind}")
       image_id = run("docker", "image", "inspect", "-f", "{{.Id}}", image).strip
@@ -120,6 +120,7 @@ begin
       metadata[:topology][app] = case kind
       when "rails" then {http_workers: config.fetch("WEB_CONCURRENCY"), threads: config.fetch("RAILS_MAX_THREADS"), jobs: "Redis/Resque", cable: "Action Cable"}
       when "rust" then {processes: 1, readers: config.fetch("RAILS_MAX_THREADS"), job_workers: config.fetch("JOB_CONCURRENCY"), cable: "native tokio", jobs: "in-process"}
+      when "swift" then {processes: 1, readers: config.fetch("RAILS_MAX_THREADS"), runtime: "SwiftNIO/Hummingbird", jobs: "in-process"}
       when "go" then {processes: 1, cable: "native websocket", jobs: "in-process"}
       when "elixir" then {processes: 1, runtime: "BEAM", jobs: "Redis/Resque", cable: "native"}
       when "express" then {http_workers: config.fetch("WEB_WORKERS", "auto (cpuset)"), cable: "native ws with cluster IPC", jobs: "leased auxiliary SQLite"}
@@ -157,7 +158,7 @@ begin
       routes = { "room_show" => "/rooms/#{room}", "messages_page" => "/rooms/#{room}/messages?before=#{labels.fetch('messages.busy_060')}",
         "sidebar" => "/users/me/sidebar", "search" => "/searches?q=coffee", "avatar" => "/users/#{labels.fetch('avatar_tokens.jason')}/avatar",
         "static_css" => scrape.fetch("css"), "up" => "/up", "post_message" => nil }
-      prepared = BenchmarkContracts.prepare(base, cookie, db, labels, scrape.fetch("css"), File.join(data, "contracts"))
+      prepared = BenchmarkContracts.prepare(base, cookie, db, labels, scrape.fetch("css"), File.join(data, "contracts"), selected_routes)
       contracts = prepared.fetch(:contracts)
       preflight = prepared.fetch(:preflight)
       row = { app: app, round: iteration + 1, preflight: preflight, http: [], mixed_http: [], load_start: File.read("/proc/loadavg").strip }
